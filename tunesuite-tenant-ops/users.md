@@ -16,6 +16,19 @@
 - "Update user profile"
 - "What roles does user X have?"
 
+## Capability Preflight
+
+Before user operations, ensure these capabilities are `true`:
+
+- `users.list`, `users.view`, `users.update` for read/update flows
+- `users.delete`, `users.resetPassword`, `users.assignClientGroup`, `users.changeCredits` for sensitive mutations
+
+Check example:
+
+```bash
+echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["users.delete"]'
+```
+
 ---
 
 ## 1 — List Users

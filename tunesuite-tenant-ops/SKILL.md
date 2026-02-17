@@ -55,6 +55,25 @@ curl -s "$TUNESUITE_API_URL/auth/me" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq '{email, roles}'
 ```
 
+5. Fetch effective RBAC capabilities (required before operations):
+
+```bash
+TUNESUITE_CAPABILITIES=$(curl -s "$TUNESUITE_API_URL/auth/capabilities" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID")
+
+echo "$TUNESUITE_CAPABILITIES" | jq '{roles, policyVersion, capabilities, constraints}'
+```
+
+Before mutating data, verify the needed capability key:
+
+```bash
+echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["orders.updateStatus"]'
+echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["users.delete"]'
+```
+
+If capability is `false`, do not execute the action.
+
 ## Module Docs
 
 - [Orders](./orders.md)
@@ -64,9 +83,9 @@ curl -s "$TUNESUITE_API_URL/auth/me" \
 ## Error Handling
 
 - `401`: Re-authenticate and retry once.
-- `403`: Explain RBAC restriction; do not attempt bypass.
 - `404`: Re-check tenant scope and IDs.
 - `429`: Wait and retry with backoff.
+- `403`: Refresh `/auth/capabilities` once, then report permission limitation if still denied.
 
 ## Output Style
 

@@ -23,6 +23,19 @@
 - "What files are attached to order X?"
 - "Connect to tenant mycompany"
 
+## Capability Preflight
+
+Before order operations, ensure these capabilities are `true`:
+
+- `orders.list`, `orders.view`, `orders.search` for read operations
+- `orders.updateStatus`, `orders.assignTechnician`, `orders.updateServices`, `orders.uploadFile`, `orders.deleteFile` for mutations
+
+Check example:
+
+```bash
+echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["orders.updateStatus"]'
+```
+
 ---
 
 ## 1 — List Orders (with pagination and filtering)
