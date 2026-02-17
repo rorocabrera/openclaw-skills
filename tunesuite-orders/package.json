@@ -1,0 +1,18 @@
+{
+  "name": "tunesuite-orders",
+  "version": "1.0.0",
+  "description": "Manage TuneSuite ECU tuning orders — list, search, inspect, update orders, download/upload ECU files, view order history, assign technicians",
+  "main": "SKILL.md",
+  "keywords": [
+    "tunesuite",
+    "ecu",
+    "tuning",
+    "orders",
+    "remapping",
+    "chiptuning",
+    "api",
+    "management"
+  ],
+  "author": "TuneSuite",
+  "license": "MIT"
+}
