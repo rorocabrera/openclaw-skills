@@ -1,29 +1,32 @@
 # TuneSuite Users Management
 
-> ⚠️ **IMPORTANT**: This skill provides the ONLY interface to TuneSuite. Agents using this skill must use these API endpoints exclusively. Do NOT use direct database access, file system access to TuneSuite servers, or any other method. All data access must go through the API defined below.
+> ⚠️ **IMPORTANT**: Use API endpoints only. Do not use direct DB or server file access.
 
-> 📡 **API Endpoint**: `https://api.tunersuite.com/api` — This is the multi-tenant API that serves ALL TuneSuite tenants.
+> 📡 **API Endpoint**: `https://api.tunersuite.com/api`
 
-> 🔐 **Authentication Required**: See [./SKILL.md](./SKILL.md) for authentication setup.
+> 🔐 **Authentication Required**: See [./SKILL.md](./SKILL.md).
 
 ---
 
 ## When to Use
 
-- "List all users"
-- "Show me technicians"
-- "Find user by email"
-- "Update user profile"
-- "What roles does user X have?"
+- "List users and filter by role/status"
+- "Find a user by email/name"
+- "Create or update a tenant user"
+- "Delete a user"
+- "Reset a user password"
+- "Assign users to client groups"
+- "Manage client access request/approval"
 
 ## Capability Preflight
 
-Before user operations, ensure these capabilities are `true`:
+Before user operations, verify capabilities from `/auth/capabilities`:
 
-- `users.list`, `users.view`, `users.update` for read/update flows
-- `users.delete`, `users.resetPassword`, `users.assignClientGroup`, `users.changeCredits` for sensitive mutations
+- `users.list`, `users.view`, `users.create`, `users.update`
+- `users.delete`, `users.resetPassword`
+- `users.assignClientGroup`, `users.setClientAccess`
 
-Check example:
+Example:
 
 ```bash
 echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["users.delete"]'
@@ -39,46 +42,23 @@ curl -s "$TUNESUITE_API_URL/users?page=1&limit=20" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
-### Filter by Role
+### Common Filters
 
 ```bash
-# List only technicians
-curl -s "$TUNESUITE_API_URL/users?role=technician" \
+# Role filter
+curl -s "$TUNESUITE_API_URL/users?role=technician&page=1&limit=20" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 
-# List only clients
-curl -s "$TUNESUITE_API_URL/users?role=client" \
+# Text search across email/name fields
+curl -s "$TUNESUITE_API_URL/users?search=john@example.com&page=1&limit=20" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 
-# List admins
-curl -s "$TUNESUITE_API_URL/users?role=admin" \
+# Additional filters
+curl -s "$TUNESUITE_API_URL/users?status=active&country=ES&sortBy=createdAt&sortOrder=desc" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
-```
-
-### Available Roles
-- `admin` — Full access
-- `manager` — Management functions
-- `sales` — Sales functions
-- `technician` — Can process orders
-- `client` — End customers
-
-### Response Format
-
-```json
-{
-  "items": [
-    {
-      "id": "uuid",
-      "email": "user@example.com",
-      "roles": ["client"],
-      "status": "active"
-    }
-  ],
-  "meta": { "currentPage": 1, "itemsPerPage": 20, "totalItems": 45, "totalPages": 3 }
-}
 ```
 
 ---
@@ -91,32 +71,36 @@ curl -s "$TUNESUITE_API_URL/users/USER_ID" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
-### Response Fields
+---
 
-```json
-{
-  "id": "uuid",
-  "email": "user@example.com",
-  "username": "username",
-  "roles": ["client"],
-  "status": "active",
-  "profile": {
-    "name": "Full Name",
-    "phone": "+1234567890",
-    "address": "...",
-    "country": "ES",
-    "zipCode": "28001",
-    "taxNumber": "..."
-  },
-  "creditBalance": "100.00",
-  "clientGroupId": null,
-  "createdAt": "2025-01-15T10:30:00Z"
-}
+## 3 — List Technicians
+
+```bash
+curl -s "$TUNESUITE_API_URL/users/technicians" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 ---
 
-## 3 — Update User Profile
+## 4 — Create User
+
+```bash
+curl -s -X POST "$TUNESUITE_API_URL/users" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "new.user@example.com",
+    "password": "TempPass123$",
+    "roles": ["client"],
+    "profile": { "name": "New User", "country": "ES" }
+  }' | jq
+```
+
+---
+
+## 5 — Update User
 
 ```bash
 curl -s -X PUT "$TUNESUITE_API_URL/users/USER_ID" \
@@ -124,45 +108,13 @@ curl -s -X PUT "$TUNESUITE_API_URL/users/USER_ID" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
   -H "Content-Type: application/json" \
   -d '{
-    "profile": {
-      "name": "New Name",
-      "phone": "+1234567890"
-    }
+    "profile": { "name": "Updated Name", "phone": "+1234567890" }
   }' | jq
 ```
 
-### ⚠️ RBAC Note
-
-Different roles have different permissions. If you get a permission error, check:
-1. Are you using an admin/manager account?
-2. Is your role allowed to modify this user's data?
-
 ---
 
-## 4 — Find Users
-
-### By Email
-
-```bash
-# Use unifiedSearch to find by email
-curl -s "$TUNESUITE_API_URL/users?unifiedSearch=user@example.com" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
-  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
-```
-
----
-
-## 5 — User Status
-
-User objects include a `status` field:
-- `active` — User can login
-- `inactive` — User cannot login
-
-*(Status update endpoint to be verified)*
-
----
-
-## 5 — Delete User
+## 6 — Delete User
 
 ```bash
 curl -s -X DELETE "$TUNESUITE_API_URL/users/USER_ID" \
@@ -170,87 +122,189 @@ curl -s -X DELETE "$TUNESUITE_API_URL/users/USER_ID" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
-⚠️ **Warning:** This permanently deletes the user. There is no trash/recovery.
+Requires `userDelete` permission.
 
 ---
 
-## Handling Access Denied (RBAC)
+## 7 — Password Operations
 
-When the authenticated user doesn't have permission:
+### User changes own password
 
-### What to Check
-
-1. **Your role** — Are you admin/manager?
-2. **Target user's role** — Can you modify users with this role?
-3. **Group scoping** — Are you limited to a specific group?
-
-### Common Error Responses
-
-```json
-{
-  "message": "Cannot add admin role. This tenant already has an admin user.",
-  "statusCode": 400
-}
-```
-
-Or filtered results (you only see what your role allows).
-
-### RBAC Test Results (ecuengineers)
-
-| Action | Manager | Notes |
-|--------|---------|-------|
-| List users | ✅ Allowed | Sees all users |
-| Update user | ✅ Allowed | Can modify others |
-| Delete user | ✅ Allowed | No restrictions! |
-| Add admin role | ❌ Blocked | Proper error message |
-
-**Note:** Manager role has broad permissions. Test with your own tenant to understand restrictions.
-
-### How to Handle
-
-1. **Check your permissions first:**
 ```bash
-curl -s "$TUNESUITE_API_URL/auth/me" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq '{email, roles}'
+curl -s -X POST "$TUNESUITE_API_URL/users/USER_ID/change-password" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"currentPassword":"OldPass123$","newPassword":"NewPass123$"}' | jq
 ```
 
-2. **If access denied:**
-   - Inform the user they don't have permission
-   - Suggest using an admin account
-   - Don't attempt to bypass
+### Admin/manager reset another user password
+
+```bash
+curl -s -X POST "$TUNESUITE_API_URL/users/USER_ID/admin-reset-password" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"newPassword":"TempReset123$"}' | jq
+```
 
 ---
 
-## Groups (Under Investigation)
+## 8 — Client Access Flow
 
-⚠️ **Groups feature is not fully tested.**
+### Request client access (self-service)
 
-What we know:
-- `clientGroupId` field exists on user objects (currently null in test tenant)
-- `GET /client-groups` returns empty array
-- Group assignment endpoints return 404
+```bash
+curl -s -X POST "$TUNESUITE_API_URL/users/client-access/request" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+```
 
-**Need:** A tenant with groups configured to test properly.
+### Set client access for a user (admin)
+
+```bash
+curl -s -X PATCH "$TUNESUITE_API_URL/users/USER_ID/client-access" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"clientAccess":"active"}' | jq
+```
+
+Allowed values: `none`, `pending`, `active`, `null`.
+
+---
+
+## 9 — Client Group Assignment
+
+Assign/unassign users to a client group:
+
+```bash
+curl -s -X PATCH "$TUNESUITE_API_URL/users/client-group" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"userIds":["USER_ID_1","USER_ID_2"],"clientGroupId":"GROUP_ID"}' | jq
+```
+
+Set `"clientGroupId": null` to unassign.
+
+---
+
+## 10 — Client Groups CRUD
+
+### List groups
+
+```bash
+curl -s "$TUNESUITE_API_URL/client-groups" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+```
+
+### Create group (admin)
+
+```bash
+curl -s -X POST "$TUNESUITE_API_URL/client-groups" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"VIP","description":"High value clients"}' | jq
+```
+
+### Update group (admin)
+
+```bash
+curl -s -X PUT "$TUNESUITE_API_URL/client-groups/GROUP_ID" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"VIP Updated"}' | jq
+```
+
+### Delete group (admin)
+
+```bash
+curl -s -X DELETE "$TUNESUITE_API_URL/client-groups/GROUP_ID" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+```
+
+---
+
+## 11 — Counts and Validation Helpers
+
+```bash
+# Admin users usage
+curl -s "$TUNESUITE_API_URL/users/admin/count" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+
+# Clients usage
+curl -s "$TUNESUITE_API_URL/users/clients/count" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+
+# Country facets
+curl -s "$TUNESUITE_API_URL/users/countries?search=jo" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+
+# Tax number uniqueness
+curl -s "$TUNESUITE_API_URL/users/validate-tax-number/TAX123" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+```
+
+---
+
+## 12 — Admin Client Group Scopes (Advanced)
+
+Manage per-admin group visibility scopes:
+
+```bash
+# Get visible scopes for admin user
+curl -s "$TUNESUITE_API_URL/admin-client-group-scopes/ADMIN_USER_ID" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+
+# Set visible scopes for admin user
+curl -s -X PUT "$TUNESUITE_API_URL/admin-client-group-scopes/ADMIN_USER_ID" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"groupIds":["GROUP_ID_1","GROUP_ID_2"]}' | jq
+```
+
+Hidden scope endpoints require `owner_ops` session:
+
+```bash
+# Get hidden group scopes
+curl -s "$TUNESUITE_API_URL/admin-client-group-scopes/ADMIN_USER_ID/hidden" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+
+# Set hidden group scopes
+curl -s -X PUT "$TUNESUITE_API_URL/admin-client-group-scopes/ADMIN_USER_ID/hidden" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"groupIds":["GROUP_ID_3"]}' | jq
+```
+
+---
+
+## Error Handling
+
+- `401`: Re-authenticate and retry once.
+- `403`: Refresh `/auth/capabilities` once; if still denied, report RBAC limitation.
+- `404`: Confirm tenant scope and target user/group IDs.
+- `400`: Show server validation message (role constraints, max users, invalid payload).
 
 ---
 
 ## Tips for the Agent
 
-1. **Always authenticate first** — Store token in `$TUNESUITE_TOKEN`
-2. **Include x-tenant-id header** on ALL requests
-3. **Filter by role** — Use `?role=technician` to find technicians
-4. **Check your permissions** — Use `/auth/me` to see your role
-5. **Respect RBAC** — Don't try to bypass access restrictions
-6. **Handle errors gracefully** — 403 means your role can't do this
-
----
-
-## To Be Verified
-
-- [ ] Update user status (activate/deactivate)
-- [ ] Reset password
-- [ ] Manage credits
-- [ ] Assign to group
-- [ ] Test RBAC with non-admin user
-
-*See [./PROGRESS.md](./PROGRESS.md) for investigation status.*
+1. Always run `/auth/capabilities` before sensitive mutations.
+2. Prefer `search=` (not `unifiedSearch`) for user lookup.
+3. Include `x-tenant-id` in every request.
+4. For destructive operations (`DELETE`, password reset, group deletion), confirm intent first.
+5. Treat client-group visibility constraints as authoritative for list and assignment behavior.
