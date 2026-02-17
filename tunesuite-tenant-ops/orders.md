@@ -17,7 +17,7 @@
 - "What vehicle is on order X?"
 - "Download the original file from order X"
 - "Upload a modified file to order X"
-- "Change order status to IN_PROGRESS"
+- "Change order status to in_progress"
 - "Assign technician to order"
 - "Show order history for order X"
 - "What files are attached to order X?"
@@ -56,7 +56,7 @@ curl -s "$TUNESUITE_API_URL/tenant-orders?page=1&limit=20" \
 | `orderId` | string | Filter by exact or partial order UUID |
 | `clientEmail` | string | Filter by client email |
 | `technicianId` | string | Filter by assigned technician UUID |
-| `status[]` | string | Filter by status (can repeat for multiple). Values: `CREATED`, `PENDING_ASSIGNMENT`, `ASSIGNED`, `IN_PROGRESS`, `REVIEWING`, `WAITING_CREDITS`, `COMPLETED`, `CANCELLED`, `REFUNDED` |
+| `status[]` | string | Filter by status (can repeat for multiple). Values: `created`, `pending_assignment`, `assigned`, `in_progress`, `reviewing`, `waiting_credits`, `completed`, `cancelled`, `refunded` |
 | `modelName` | string | Filter by ECU model name |
 | `vehicleTypeId` | string | Filter by vehicle type UUID |
 | `brandId` | string | Filter by brand UUID |
@@ -87,14 +87,14 @@ curl -s "$TUNESUITE_API_URL/tenant-orders?unifiedSearch=abc123&page=1&limit=10" 
 
 **Filter by multiple statuses:**
 ```bash
-curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=IN_PROGRESS&status[]=ASSIGNED&page=1&limit=20" \
+curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=in_progress&status[]=assigned&page=1&limit=20" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 **Filter by status and sort descending:**
 ```bash
-curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=COMPLETED&sortOrder=DESC&page=1&limit=20" \
+curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=completed&sortOrder=DESC&page=1&limit=20" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
@@ -106,7 +106,7 @@ curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=COMPLETED&sortOrder=DESC&page
   "items": [
     {
       "id": "uuid",
-      "status": "IN_PROGRESS",
+      "status": "in_progress",
       "totalPrice": "150.00",
       "createdAt": "2025-01-15T10:30:00Z",
       "updatedAt": "2025-01-15T12:00:00Z",
@@ -215,7 +215,7 @@ curl -s "$TUNESUITE_API_URL/tenant-orders/new-count" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
-Returns a number representing orders with `CREATED` status.
+Returns a number representing orders with `created` status.
 
 ---
 
@@ -226,20 +226,20 @@ curl -s -X PATCH "$TUNESUITE_API_URL/tenant-orders/ORDER_ID_HERE/status" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
   -H "Content-Type: application/json" \
-  -d '{"status": "NEW_STATUS_HERE", "comment": "Optional reason for status change"}' | jq
+  -d '{"status": "in_progress", "comment": "Optional reason for status change"}' | jq
 ```
 
 ### Valid Status Transitions
 
 | Current Status | Can Transition To |
 |---------------|-------------------|
-| `CREATED` | `PENDING_ASSIGNMENT`, `IN_PROGRESS`, `CANCELLED` |
-| `PENDING_ASSIGNMENT` | `ASSIGNED`, `IN_PROGRESS`, `CANCELLED` |
-| `ASSIGNED` | `IN_PROGRESS`, `CANCELLED` |
-| `IN_PROGRESS` | `REVIEWING`, `COMPLETED`, `WAITING_CREDITS`, `CANCELLED` |
-| `REVIEWING` | `IN_PROGRESS`, `COMPLETED`, `WAITING_CREDITS` |
-| `WAITING_CREDITS` | `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
-| `COMPLETED` | `REFUNDED` |
+| `created` | `pending_assignment`, `in_progress`, `cancelled` |
+| `pending_assignment` | `assigned`, `in_progress`, `cancelled` |
+| `assigned` | `in_progress`, `cancelled` |
+| `in_progress` | `reviewing`, `completed`, `waiting_credits`, `cancelled` |
+| `reviewing` | `in_progress`, `completed`, `waiting_credits` |
+| `waiting_credits` | `in_progress`, `completed`, `cancelled` |
+| `completed` | `refunded` |
 
 **IMPORTANT:** Always confirm with the user before changing status. Status changes trigger notifications and credit operations.
 
@@ -469,15 +469,15 @@ Returns completed orders matching the VIN.
 
 | Status | Meaning |
 |--------|---------|
-| `CREATED` | New order, awaiting processing |
-| `PENDING_ASSIGNMENT` | Needs technician assignment |
-| `ASSIGNED` | Technician assigned, not yet started |
-| `IN_PROGRESS` | Technician actively working |
-| `REVIEWING` | Work done, under review |
-| `WAITING_CREDITS` | Client needs to add credits |
-| `COMPLETED` | Finished and delivered |
-| `CANCELLED` | Order cancelled |
-| `REFUNDED` | Credits refunded after completion |
+| `created` | New order, awaiting processing |
+| `pending_assignment` | Needs technician assignment |
+| `assigned` | Technician assigned, not yet started |
+| `in_progress` | Technician actively working |
+| `reviewing` | Work done, under review |
+| `waiting_credits` | Client needs to add credits |
+| `completed` | Finished and delivered |
+| `cancelled` | Order cancelled |
+| `refunded` | Credits refunded after completion |
 
 ---
 
@@ -489,7 +489,8 @@ Returns completed orders matching the VIN.
 4. **Present data clearly** — format order lists as tables and order details as structured sections.
 5. **Confirm destructive actions** — always ask the user before changing status, updating services (affects credits), or deleting files.
 6. **Handle pagination** — check `meta.totalPages` and inform the user if there are more pages.
-7. **Token expiry** — instance tokens last 4 hours. If you get 401 errors, re-authenticate.
+7. **Token expiry** — instance tokens last ~4 hours. Prefer `/auth/refresh-token` before re-login.
 8. **File downloads** — binary files are streamed. Use `-o filename` to save them.
 9. **Encryption** — only use `encrypt=true` or `decrypt=true` when the tenant has valid tool API keys configured.
 10. **Finding technicians** — use `GET /users` and filter by `technician` role.
+11. **429 handling** — if rate limited, retry with exponential backoff (`1s`, `2s`, `4s`, `8s`, jitter).

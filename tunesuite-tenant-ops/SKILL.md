@@ -35,16 +35,20 @@ export TUNESUITE_API_URL="https://api.tunersuite.com/api"
 TUNESUITE_TENANT_ID=$(curl -s "$TUNESUITE_API_URL/tenants/public/code/TENANT_CODE" | jq -r '.id')
 ```
 
-3. Authenticate:
+3. Authenticate (store access + refresh tokens):
 
 ```bash
-TUNESUITE_TOKEN=$(curl -s -X POST "$TUNESUITE_API_URL/auth/login" \
+AUTH_JSON=$(curl -s -X POST "$TUNESUITE_API_URL/auth/login" \
   -H "Content-Type: application/json" \
   -H "x-client-type: instance" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
   -H "x-panel-type: admin" \
-  -d '{"email":"ADMIN_EMAIL","password":"PASSWORD"}' \
-  | jq -r '.tokens.accessToken')
+  -d '{"email":"ADMIN_EMAIL","password":"PASSWORD"}')
+
+TUNESUITE_TOKEN=$(echo "$AUTH_JSON" | jq -r '.tokens.accessToken')
+TUNESUITE_REFRESH_TOKEN=$(echo "$AUTH_JSON" | jq -r '.tokens.refreshToken')
+TUNESUITE_ACCESS_EXPIRES_AT=$(echo "$AUTH_JSON" | jq -r '.tokens.accessTokenExpiresAt')
+TUNESUITE_REFRESH_EXPIRES_AT=$(echo "$AUTH_JSON" | jq -r '.tokens.refreshTokenExpiresAt')
 ```
 
 4. Verify identity and roles:
@@ -74,6 +78,25 @@ echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["users.delete"]'
 
 If capability is `false`, do not execute the action.
 
+## Token Lifecycle
+
+- Instance access token TTL: ~4h
+- Refresh token TTL: ~30d
+- Avoid repeated `/auth/login` calls (login is rate-limited to 5/minute per IP).
+
+Refresh access token without re-login:
+
+```bash
+REFRESH_JSON=$(curl -s -X POST "$TUNESUITE_API_URL/auth/refresh-token" \
+  -H "Content-Type: application/json" \
+  -d "{\"refreshToken\":\"$TUNESUITE_REFRESH_TOKEN\"}")
+
+TUNESUITE_TOKEN=$(echo "$REFRESH_JSON" | jq -r '.tokens.accessToken')
+TUNESUITE_REFRESH_TOKEN=$(echo "$REFRESH_JSON" | jq -r '.tokens.refreshToken')
+TUNESUITE_ACCESS_EXPIRES_AT=$(echo "$REFRESH_JSON" | jq -r '.tokens.accessTokenExpiresAt')
+TUNESUITE_REFRESH_EXPIRES_AT=$(echo "$REFRESH_JSON" | jq -r '.tokens.refreshTokenExpiresAt')
+```
+
 ## Module Docs
 
 - [Orders](./orders.md)
@@ -82,9 +105,9 @@ If capability is `false`, do not execute the action.
 
 ## Error Handling
 
-- `401`: Re-authenticate and retry once.
+- `401`: Refresh token once via `/auth/refresh-token`, then retry once.
 - `404`: Re-check tenant scope and IDs.
-- `429`: Wait and retry with backoff.
+- `429`: Use exponential backoff with jitter. Start `1s`, then `2s`, `4s`, `8s` (max `30s`).
 - `403`: Refresh `/auth/capabilities` once, then report permission limitation if still denied.
 
 ## Output Style
