@@ -1,7 +1,5 @@
 # OpenClaw Skills (TuneSuite)
 
-## Primary Skill
+## Available Skills
 
-Use this consolidated skill:
-
-- `tunesuite-tenant-ops/`
+- `tunesuite-tenant-ops/` — Single TuneSuite operations skill (auth, orders, users, tickets, payments, leads, distributors, tasks/timeline/automation)

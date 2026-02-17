@@ -1,12 +1,12 @@
 ---
 name: tunesuite-tenant-ops
-description: Manage TuneSuite tenant operations through the multi-tenant API, including tenant login, orders, users, assignments, statuses, and file workflows.
+description: Manage all TuneSuite tenant operations through the multi-tenant API, including auth, orders, users, tickets, payments, leads, distributors, tasks, timeline, and automation.
 metadata: {"openclaw":{"emoji":"🔧","requires":{"bins":["curl","jq"],"env":["TUNESUITE_API_URL"]}}}
 ---
 
 # TuneSuite Tenant Operations
 
-Use this skill for TuneSuite tenant admin operations (orders + users) through the multi-tenant API.
+Use this as the single TuneSuite operations skill for tenant admin workflows through the multi-tenant API.
 
 ## Guardrails
 
@@ -69,7 +69,7 @@ TUNESUITE_CAPABILITIES=$(curl -s "$TUNESUITE_API_URL/auth/capabilities" \
 echo "$TUNESUITE_CAPABILITIES" | jq '{roles, policyVersion, capabilities, constraints}'
 ```
 
-Before mutating data, verify the needed capability key:
+Before mutating orders/users data, verify the needed capability key:
 
 ```bash
 echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["orders.updateStatus"]'
@@ -77,6 +77,10 @@ echo "$TUNESUITE_CAPABILITIES" | jq -r '.capabilities["users.delete"]'
 ```
 
 If capability is `false`, do not execute the action.
+
+For CRM routes (`leads`, `distributors`, `tasks`, `timeline`, `automation`, `task-series`),
+current capabilities may not include explicit keys. Preflight with `/auth/me` roles and enforce
+runtime `403` handling.
 
 ## Token Lifecycle
 
@@ -101,7 +105,11 @@ TUNESUITE_REFRESH_EXPIRES_AT=$(echo "$REFRESH_JSON" | jq -r '.tokens.refreshToke
 
 - [Orders](./orders.md)
 - [Users](./users.md)
-- [Progress](./PROGRESS.md)
+- [Tickets](./tickets.md)
+- [Payments](./payments.md)
+- [Leads](./leads.md)
+- [Distributors](./distributors.md)
+- [Tasks](./tasks.md)
 
 ## Error Handling
 

@@ -1,17 +1,29 @@
 {
   "name": "tunesuite-tenant-ops",
   "version": "1.0.0",
-  "description": "Single OpenClaw skill for TuneSuite tenant operations (orders and users) via the multi-tenant API",
+  "description": "Single OpenClaw skill for all TuneSuite tenant operations (orders, users, tickets, payments, leads, distributors, tasks/timeline/automation) via the multi-tenant API",
   "main": "SKILL.md",
   "modules": [
     "orders.md",
-    "users.md"
+    "users.md",
+    "tickets.md",
+    "payments.md",
+    "leads.md",
+    "distributors.md",
+    "tasks.md"
   ],
   "keywords": [
     "tunesuite",
     "tenant",
     "orders",
     "users",
+    "tickets",
+    "payments",
+    "leads",
+    "distributors",
+    "tasks",
+    "timeline",
+    "automation",
     "rbac",
     "api"
   ],
