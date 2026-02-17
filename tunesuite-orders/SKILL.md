@@ -62,6 +62,8 @@ Only proceed if `status` is `"active"`.
 
 ### 0b — Authenticate
 
+> ⚠️ **CRITICAL**: You MUST include `x-tenant-id` header in ALL API requests after authentication, not just during auth.
+
 ```bash
 TUNESUITE_TOKEN=$(curl -s -X POST "$TUNESUITE_API_URL/auth/login" \
   -H "Content-Type: application/json" \
@@ -80,6 +82,13 @@ curl -s "$TUNESUITE_API_URL/auth/me" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq '.email, .roles'
 ```
 
+**IMPORTANT**: After authentication, you MUST include the `x-tenant-id` header in ALL subsequent requests:
+```bash
+curl -s "$TUNESUITE_API_URL/tenant-orders?page=1&limit=20" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+```
+
 After authenticating, use `$TUNESUITE_TENANT_ID` and `$TUNESUITE_TOKEN` in all subsequent requests.
 
 ### Switching Tenants
@@ -92,7 +101,8 @@ To work with a different tenant, simply repeat Step 0 with the new tenant code a
 
 ```bash
 curl -s "$TUNESUITE_API_URL/tenant-orders?page=1&limit=20" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 ### Available Query Parameters
@@ -116,38 +126,43 @@ curl -s "$TUNESUITE_API_URL/tenant-orders?page=1&limit=20" \
 **Search by client email:**
 ```bash
 curl -s "$TUNESUITE_API_URL/tenant-orders?unifiedSearch=john@example.com&page=1&limit=10" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 **Search by client name:**
 ```bash
 curl -s "$TUNESUITE_API_URL/tenant-orders?unifiedSearch=John%20Smith&page=1&limit=10" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 **Search by order ID (partial UUID works with 2+ characters):**
 ```bash
 curl -s "$TUNESUITE_API_URL/tenant-orders?unifiedSearch=abc123&page=1&limit=10" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 **Filter by multiple statuses:**
 ```bash
 curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=IN_PROGRESS&status[]=ASSIGNED&page=1&limit=20" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 **Filter by status and sort descending:**
 ```bash
 curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=COMPLETED&sortOrder=DESC&page=1&limit=20" \
-  -H "Authorization: Bearer $TUNESUITE_TOKEN" | jq
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
 ```
 
 ### Response Format
 
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "uuid",
       "status": "IN_PROGRESS",
@@ -164,7 +179,7 @@ curl -s "$TUNESUITE_API_URL/tenant-orders?status[]=COMPLETED&sortOrder=DESC&page
       "quotationSnapshot": { "breakdown": { "finalTotal": 150, "services": [...] } }
     }
   ],
-  "meta": { "page": 1, "limit": 20, "totalItems": 45, "totalPages": 3 }
+  "meta": { "currentPage": 1, "itemsPerPage": 20, "totalItems": 45, "totalPages": 3 }
 }
 ```
 
@@ -523,13 +538,14 @@ curl -s ... | jq '.message'
 ## Tips for the Agent
 
 1. **Always authenticate first** before any operation. Store the token in `$TUNESUITE_TOKEN`.
-2. **Use `unifiedSearch`** for flexible searching — it covers order ID, email, name, model name, and comments simultaneously.
-3. **Present data clearly** — format order lists as tables and order details as structured sections.
-4. **Confirm destructive actions** — always ask the user before changing status, updating services (affects credits), or deleting files.
-5. **Handle pagination** — check `meta.totalPages` and inform the user if there are more pages.
-6. **Token expiry** — instance tokens last 4 hours. If you get 401 errors, re-authenticate.
-7. **File downloads** — binary files are streamed. Use `-o filename` to save them.
-8. **Encryption** — only use `encrypt=true` or `decrypt=true` when the tenant has valid tool API keys configured.
+2. **ALWAYS include x-tenant-id header** in ALL requests after authentication — even after login, the API requires it on every call.
+3. **Use `unifiedSearch`** for flexible searching — it covers order ID, email, name, model name, and comments simultaneously.
+4. **Present data clearly** — format order lists as tables and order details as structured sections.
+5. **Confirm destructive actions** — always ask the user before changing status, updating services (affects credits), or deleting files.
+6. **Handle pagination** — check `meta.totalPages` and inform the user if there are more pages.
+7. **Token expiry** — instance tokens last 4 hours. If you get 401 errors, re-authenticate.
+8. **File downloads** — binary files are streamed. Use `-o filename` to save them.
+9. **Encryption** — only use `encrypt=true` or `decrypt=true` when the tenant has valid tool API keys configured.
 
 ---
 
