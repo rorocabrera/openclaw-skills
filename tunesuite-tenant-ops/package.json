@@ -1,0 +1,20 @@
+{
+  "name": "tunesuite-tenant-ops",
+  "version": "1.0.0",
+  "description": "Single OpenClaw skill for TuneSuite tenant operations (orders and users) via the multi-tenant API",
+  "main": "SKILL.md",
+  "modules": [
+    "orders.md",
+    "users.md"
+  ],
+  "keywords": [
+    "tunesuite",
+    "tenant",
+    "orders",
+    "users",
+    "rbac",
+    "api"
+  ],
+  "author": "TuneSuite",
+  "license": "MIT"
+}
