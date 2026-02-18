@@ -1,60 +1,61 @@
-# OpenClaw Skills
+# TuneSuite OpenClaw Skills
 
-AI agent skills for TBase/TuneSuite tenant operations via the multi-tenant API.
+OpenClaw skill pack that lets AI agents manage TuneSuite tenant operations through the API. Handles orders, tickets, users, payments, leads, CRM tasks, and automation — all via authenticated `curl` calls.
 
-## Available Skills
+## What's inside
 
-| Skill | Description |
-|-------|-------------|
-| [`tunesuite-tenant-ops/`](./tunesuite-tenant-ops/) | Full tenant operations: auth, orders, users, tickets, payments, leads, distributors, tasks, timeline, automation |
-
-## Installation
-
-Install via OpenClaw CLI:
-
-```bash
-openclaw skills add tbase/openclaw-skills/tunesuite-tenant-ops
+```
+tunesuite-tenant-ops/
+  SKILL.md          # Auth bootstrap, guardrails, session setup
+  orders.md         # Order lifecycle, status updates, file handling
+  tickets.md        # Ticket CRUD, close, message, assign, escalate
+  users.md          # User management, roles, profiles
+  payments.md       # Credit purchases, payment reports
+  leads.md          # Lead submission, status tracking
+  distributors.md   # Distributor management
+  tasks.md          # CRM tasks, calendar, timeline, automation rules
 ```
 
-Or clone directly:
+## Quick start
 
-```bash
-git clone https://github.com/tbase-ai/openclaw-skills.git
-```
-
-## Updating
-
-Pull latest changes:
-
-```bash
-git pull origin main
-```
-
-## Skill Structure
-
-Each skill folder contains:
-- `SKILL.md` — Main skill definition (entry point, auth bootstrap, guardrails)
-- `package.json` — Skill metadata and module list
-- `*.md` — Module docs (one per API domain: orders, tickets, users, etc.)
-
-## Configuration
-
-Set the API base URL before using any skill:
+1. Point to your API:
 
 ```bash
 export TUNESUITE_API_URL="https://api.tunersuite.com/api"
 ```
 
-For development/staging:
+2. Authenticate (the skill handles this automatically, but here's the manual flow):
+
 ```bash
-export TUNESUITE_API_URL="http://localhost:3000/api"
+# Resolve tenant
+TUNESUITE_TENANT_ID=$(curl -s "$TUNESUITE_API_URL/tenants/public/code/YOUR_CODE" | jq -r '.id')
+
+# Login
+AUTH=$(curl -s -X POST "$TUNESUITE_API_URL/auth/login" \
+  -H "Content-Type: application/json" \
+  -H "x-client-type: instance" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "x-panel-type: admin" \
+  -d '{"email":"you@tenant.com","password":"..."}')
+
+TUNESUITE_TOKEN=$(echo "$AUTH" | jq -r '.tokens.accessToken')
 ```
 
-## Contributing
+3. Use any endpoint. Example — close a ticket:
 
-1. Edit skill modules in this repo
-2. Test against local API (`localhost:3000`)
-3. Submit a PR
+```bash
+curl -s -X PUT "$TUNESUITE_API_URL/admin/tickets/TICKET_ID/status" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"closed"}'
+```
+
+## Requirements
+
+- `curl` and `jq` available in PATH
+- A TuneSuite tenant admin account
+- `TUNESUITE_API_URL` env var set
 
 ## License
 
