@@ -73,6 +73,11 @@ curl -s "$TUNESUITE_API_URL/admin/tickets/attachments/ATTACHMENT_ID/download" \
 ## 5 — Optional Ticket Filters
 
 ```bash
+# Full-text search across title/description/conversation/entities
+curl -s "$TUNESUITE_API_URL/admin/tickets?search=SEARCH_TERM&page=1&limit=20" \
+  -H "Authorization: Bearer $TUNESUITE_TOKEN" \
+  -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+
 # Order-related tickets only
 curl -s "$TUNESUITE_API_URL/admin/tickets?orderRelatedOnly=true&page=1&limit=20" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
@@ -82,6 +87,57 @@ curl -s "$TUNESUITE_API_URL/admin/tickets?orderRelatedOnly=true&page=1&limit=20"
 curl -s "$TUNESUITE_API_URL/admin/tickets?status=open&priority=high&page=1&limit=20" \
   -H "Authorization: Bearer $TUNESUITE_TOKEN" \
   -H "x-tenant-id: $TUNESUITE_TENANT_ID" | jq
+```
+
+### Search Coverage
+
+`search` matches ticket data and linked conversation/entity fields, including:
+- Ticket core: `id`, `title`, `description`
+- Conversation: message `content`, `sender_identifier`, `external_message_id`
+- Linked users: client/admin `email`, client profile (`name`, `firstName`, `lastName`, `phone`)
+- Linked entities: `relatedEntityId`, `relatedEntityType`, lead `id/name/email/phone`, external contact `identifier/normalized_identifier`
+- Metadata: lead snapshot (`name/email/phone`), order/credit/payment-related metadata IDs
+
+### Local Smoke Test (Admin Search)
+
+```bash
+python3 - <<'PY'
+import json, subprocess, urllib.parse
+
+API_URL='http://localhost:3000/api'
+TENANT_ID='a1c6c439-dda5-48af-854a-41ae1bde124e'
+EMAIL='admin@reprorace.tunersuite.com'
+PASSWORD='Admin123$'
+
+def run(cmd):
+    return subprocess.check_output(cmd, shell=True, text=True)
+
+auth = run(f"curl -sS -X POST '{API_URL}/auth/login' -H 'Content-Type: application/json' -H 'x-client-type: instance' -H 'x-panel-type: admin' -H 'x-tenant-id: {TENANT_ID}' -d '{{\"email\":\"{EMAIL}\",\"password\":\"{PASSWORD}\"}}'")
+token = json.loads(auth)['tokens']['accessToken']
+
+cases = [
+  ('title', 'minicooper'),
+  ('description', 'electrovalvula'),
+  ('conversation_content', 'hola'),
+  ('lead_name', 'Rodrigo Cabrera'),
+  ('lead_email', 'rorocabrera@gmail.com'),
+  ('related_entity_id', '24c841a7-fda0-4569-b9b4-40b49e64a0e9'),
+  ('external_identifier', '34607302691'),
+]
+
+print('CASE\\tTERM\\tTOTAL\\tFIRST_MATCH')
+for label, term in cases:
+    q = urllib.parse.quote(term, safe='')
+    raw = run(f"curl -sS '{API_URL}/admin/tickets?page=1&limit=10&search={q}' -H 'Authorization: Bearer {token}' -H 'x-tenant-id: {TENANT_ID}'")
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        data = json.loads(''.join(ch for ch in raw if ord(ch) >= 32 or ch in '\\n\\r\\t'))
+    total = ((data.get('meta') or {}).get('totalItems'))
+    items = data.get('items') or []
+    first = '<none>' if not items else f"{items[0].get('id')} | {items[0].get('title','')}"
+    print(f"{label}\\t{term}\\t{total}\\t{first}")
+PY
 ```
 
 ## 6 — Get Ticket Messages
