@@ -1,0 +1,25 @@
+{
+  "name": "tunesuite-agent-platform-builder",
+  "version": "1.0.0",
+  "description": "OpenClaw skill to build and harden the TuneSuite multi-tenant agent platform from foundation to production.",
+  "main": "SKILL.md",
+  "modules": [
+    "references/current-setup-map.md",
+    "references/openclaw-freshness-sources.md"
+  ],
+  "scripts": {
+    "freshness:check": "bash freshness-check.sh"
+  },
+  "keywords": [
+    "tunesuite",
+    "agent",
+    "openclaw",
+    "multitenant",
+    "platform",
+    "orchestration",
+    "policy",
+    "runtime"
+  ],
+  "author": "TuneSuite",
+  "license": "MIT"
+}

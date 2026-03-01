@@ -14,6 +14,12 @@ tunesuite-tenant-ops/
   leads.md          # Lead submission, status tracking
   distributors.md   # Distributor management
   tasks.md          # CRM tasks, calendar, timeline, automation rules
+
+tunesuite-agent-platform-builder/
+  SKILL.md                           # End-to-end build workflow for multi-tenant agent platform
+  references/current-setup-map.md    # Canonical docs, code touchpoints, route contracts
+  references/openclaw-freshness-sources.md # Runtime/code/upstream freshness strategy
+  freshness-check.sh                 # Quick drift and runtime freshness audit
 ```
 
 ## Quick start
