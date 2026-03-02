@@ -1,6 +1,6 @@
 # TuneSuite OpenClaw Skills
 
-OpenClaw skill pack that lets AI agents manage TuneSuite tenant operations through the API. Handles orders, tickets, users, payments, leads, CRM tasks, and automation — all via authenticated `curl` calls.
+OpenClaw skill pack that lets AI agents manage TuneSuite tenant operations through the API. Handles orders, tickets, users, payments, leads, CRM tasks, and automation - all via authenticated `curl` calls.
 
 ## What's inside
 
@@ -15,11 +15,8 @@ tunesuite-tenant-ops/
   distributors.md   # Distributor management
   tasks.md          # CRM tasks, calendar, timeline, automation rules
 
-tunesuite-agent-platform-builder/
-  SKILL.md                           # End-to-end build workflow for multi-tenant agent platform
-  references/current-setup-map.md    # Canonical docs, code touchpoints, route contracts
-  references/openclaw-freshness-sources.md # Runtime/code/upstream freshness strategy
-  freshness-check.sh                 # Quick drift and runtime freshness audit
+tunesuite-stalwart-mail-ops/
+  SKILL.md          # Stalwart + CRM mailbox provisioning/scope/cap debug and smoke workflow
 ```
 
 ## Quick start
@@ -47,7 +44,7 @@ AUTH=$(curl -s -X POST "$TUNESUITE_API_URL/auth/login" \
 TUNESUITE_TOKEN=$(echo "$AUTH" | jq -r '.tokens.accessToken')
 ```
 
-3. Use any endpoint. Example — close a ticket:
+3. Use any endpoint. Example - close a ticket:
 
 ```bash
 curl -s -X PUT "$TUNESUITE_API_URL/admin/tickets/TICKET_ID/status" \
