@@ -1,6 +1,6 @@
 # TuneSuite OpenClaw Skills
 
-OpenClaw skill pack that lets AI agents manage TuneSuite tenant operations through the API. Handles orders, tickets, users, payments, leads, CRM tasks, and automation - all via authenticated `curl` calls.
+OpenClaw skill pack that lets AI agents manage TuneSuite tenant operations through the API. Handles orders, tickets, users, payments, leads, CRM tasks, courses, products, registration links, virtual classrooms, and automation - all via authenticated `curl` calls.
 
 ## What's inside
 
@@ -14,6 +14,7 @@ tunesuite-tenant-ops/
   leads.md          # Lead submission, status tracking
   distributors.md   # Distributor management
   tasks.md          # CRM tasks, calendar, timeline, automation rules
+  courses.md        # Courses, lessons, virtual classrooms, products, direct registration links
 
 tunesuite-stalwart-mail-ops/
   SKILL.md          # Stalwart + CRM mailbox provisioning/scope/cap debug and smoke workflow

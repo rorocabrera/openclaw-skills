@@ -1,6 +1,6 @@
 ---
 name: tunesuite-tenant-ops
-description: Manage all TuneSuite tenant operations through the multi-tenant API, including auth, orders, users, tickets, payments, leads, distributors, tasks, timeline, and automation.
+description: Manage all TuneSuite tenant operations through the multi-tenant API, including auth, orders, users, tickets, payments, leads, distributors, tasks, courses, virtual classrooms, course products, direct registration links, timeline, and automation.
 metadata: {"openclaw":{"emoji":"🔧","requires":{"bins":["curl","jq"],"env":["TUNESUITE_API_URL"]}}}
 ---
 
@@ -82,6 +82,10 @@ For CRM routes (`leads`, `distributors`, `tasks`, `timeline`, `automation`, `tas
 current capabilities may not include explicit keys. Preflight with `/auth/me` roles and enforce
 runtime `403` handling.
 
+For course routes, current capabilities may not include explicit keys. Require an admin, manager,
+or super admin user for course/module/lesson/live-session mutations and enforce runtime `403`
+handling.
+
 ## Token Lifecycle
 
 - Instance access token TTL: ~4h
@@ -110,6 +114,7 @@ TUNESUITE_REFRESH_EXPIRES_AT=$(echo "$REFRESH_JSON" | jq -r '.tokens.refreshToke
 - [Leads](./leads.md)
 - [Distributors](./distributors.md)
 - [Tasks](./tasks.md)
+- [Courses](./courses.md)
 
 ## Error Handling
 
